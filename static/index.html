@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Benzer Görsel ve Metin Bulucu</title>
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: rgba(79, 70, 229, 0.05);
+      --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      
+      --success: #16a34a;
+      --success-bg: #f0fdf4;
+      --success-border: #bbf7d0;
+      --warning: #ca8a04;
+      --warning-bg: #fefce8;
+      --warning-border: #fef08a;
+      --error: #dc2626;
+      --error-bg: #fef2f2;
+      --error-border: #fecaca;
+      
+      --radius: 12px;
+      --radius-sm: 8px;
+      
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --input-bg: #f8fafc;
+      
+      --transition: all 0.2s ease;
+    }
+
+    body {
+      font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--card-border);
+      padding: 16px 32px;
+      display: flex; align-items: center; gap: 16px;
+      position: sticky; top: 0; z-index: 20;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    }
+    .header-icon {
+      width: 40px; height: 40px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+      border: 1px solid var(--card-border);
+    }
+    .header h1 { 
+      font-size: 1.25rem; font-weight: 700; 
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+    }
+    .header p { font-size: .85rem; color: var(--text-muted); font-weight: 400; }
+
+    /* ── Layout ── */
+    .container { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
+
+    /* ── Phase ── */
+    .phase { display: none; }
+    .phase.active { display: block; animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn { 
+      from { opacity: 0; transform: translateY(8px); } 
+      to { opacity: 1; transform: translateY(0); } 
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+      padding: 24px; 
+      margin-bottom: 20px;
+      transition: var(--transition);
+    }
+    .card-title {
+      font-size: .88rem; font-weight: 700; color: var(--text-main);
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+      opacity: 0.8;
+    }
+
+    /* ── Upload Tabs ── */
+    .upload-tabs {
+      display: flex; gap: 4px; margin-bottom: 20px;
+      background: var(--bg); border-radius: var(--radius-sm);
+      padding: 4px;
+      border: 1px solid var(--card-border);
+    }
+    .tab-btn {
+      flex: 1; padding: 8px 16px;
+      border: none; border-radius: 6px;
+      font-size: .88rem; font-weight: 600; cursor: pointer;
+      background: transparent; color: var(--text-muted);
+      transition: var(--transition);
+    }
+    .tab-btn:hover { color: var(--text-main); }
+    .tab-btn.active {
+      background: #ffffff; color: var(--primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    /* ── Folder tab ── */
+    .folder-input-wrap { display: flex; gap: 8px; }
+    .folder-input-wrap input[type=text] {
+      flex: 1; min-width: 0; padding: 10px 14px;
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      font-size: .92rem; outline: none; 
+      transition: var(--transition);
+      font-family: "Consolas", "Courier New", monospace;
+    }
+    .folder-input-wrap input[type=text]:focus { 
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .btn-browse {
+      padding: 10px 18px; border-radius: var(--radius-sm);
+      font-size: .88rem; font-weight: 600; cursor: pointer;
+      background: #ffffff; color: var(--text-main);
+      border: 1px solid var(--card-border); 
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+    .btn-browse:hover {
+      background: var(--bg);
+      border-color: #cbd5e1;
+    }
+    .folder-hint {
+      font-size: .78rem; color: var(--text-muted); margin-top: 8px;
+    }
+    .folder-hint kbd {
+      background: #f1f5f9; border: 1px solid #e2e8f0;
+      border-radius: 4px; padding: 2px 4px; font-size: .72rem; color: var(--text-main);
+    }
+    .folder-status {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 10px; font-size: .85rem; min-height: 20px;
+      font-weight: 600;
+    }
+    .folder-status.ok  { color: var(--success); }
+    .folder-status.err { color: var(--error); }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      border: 2px dashed #cbd5e1; 
+      border-radius: var(--radius);
+      padding: 40px 24px; text-align: center; cursor: pointer;
+      transition: var(--transition); 
+      background: var(--bg);
+      user-select: none;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--primary); 
+      background: var(--primary-light);
+    }
+    .dz-icon { font-size: 40px; line-height: 1; margin-bottom: 12px; }
+    .dz-text { font-size: .92rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+    .dz-sub  { font-size: .8rem; color: var(--text-muted); }
+    .dz-sub em { color: var(--primary); font-style: normal; font-weight: 600; }
+    .file-meta {
+      display: flex; align-items: center; gap: 12px;
+      margin-top: 12px; font-size: .85rem; color: var(--text-muted);
+    }
+    .file-meta strong { color: var(--text-main); }
+    .clear-btn {
+      background: var(--error-bg); border: 1px solid var(--error-border); 
+      cursor: pointer; color: var(--error); 
+      font-size: .8rem; font-weight: 600;
+      padding: 4px 10px; border-radius: 6px;
+      transition: var(--transition);
+    }
+    .clear-btn:hover { background: var(--error); color: #ffffff; border-color: transparent; }
+
+    /* ── Thumbnail grid (upload preview) ── */
+    .thumb-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+      gap: 10px; margin-top: 16px;
+    }
+    .thumb-card {
+      position: relative; border-radius: var(--radius-sm);
+      overflow: hidden; aspect-ratio: 1; background: var(--bg);
+      border: 1px solid var(--card-border);
+      transition: var(--transition);
+    }
+    .thumb-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .thumb-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb-name {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: rgba(255, 255, 255, 0.9); color: var(--text-main); font-size: 8px;
+      padding: 3px 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-weight: 600;
+      border-top: 1px solid var(--card-border);
+    }
+    .thumb-remove {
+      position: absolute; top: 4px; right: 4px;
+      width: 18px; height: 18px;
+      background: #ffffff; color: var(--text-muted); border: 1px solid var(--card-border); border-radius: 50%;
+      cursor: pointer; font-size: 9px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: var(--transition);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .thumb-remove:hover { color: var(--error); border-color: var(--error); background: var(--error-bg); }
+
+    /* ── Settings ── */
+    .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+    .setting-label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: .8rem; font-weight: 800; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px;
+    }
+    .radio-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .radio-pill {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 14px; border: 1px solid var(--card-border);
+      border-radius: 999px; cursor: pointer; font-size: .85rem;
+      transition: var(--transition); background: #ffffff; color: var(--text-muted);
+      white-space: nowrap; font-weight: 600;
+    }
+    .radio-pill:hover { border-color: #cbd5e1; color: var(--text-main); }
+    .radio-pill:has(input:checked) {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    .radio-pill input { display: none; }
+    .gpu-hint { font-size: .78rem; margin-top: 6px; font-weight: 600; }
+    .gpu-hint.ok  { color: var(--success); }
+    .gpu-hint.off { color: var(--text-muted); }
+
+    /* ── Analyze button ── */
+    .analyze-btn {
+      width: 100%; padding: 14px;
+      background: var(--primary); color: #ffffff; border: none;
+      border-radius: var(--radius); font-size: .95rem; font-weight: 700;
+      cursor: pointer; transition: var(--transition);
+      box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+    }
+    .analyze-btn:hover:not(:disabled) { 
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+    .analyze-btn:active:not(:disabled) { 
+      transform: translateY(0);
+    }
+    .analyze-btn:disabled { 
+      background: #cbd5e1; color: #94a3b8; 
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* ── Progress ── */
+    .progress-wrap {
+      display: flex; flex-direction: column; align-items: center; padding: 40px 24px;
+    }
+    .spinner {
+      width: 44px; height: 44px; 
+      border: 3px solid #e2e8f0;
+      border-top-color: var(--primary); 
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite; 
+      margin-bottom: 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .prog-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; color: var(--text-main); }
+    .prog-sub { font-size: .88rem; color: var(--text-muted); margin-bottom: 20px; min-height: 18px; text-align: center; font-weight: 500; }
+    .prog-bar-track { 
+      width: 100%; max-width: 400px; 
+      background: #f1f5f9; 
+      border-radius: 999px; height: 8px; 
+      overflow: hidden; margin-bottom: 10px;
+      border: 1px solid var(--card-border);
+    }
+    .prog-bar { 
+      height: 100%; 
+      background: var(--primary); 
+      border-radius: 999px; width: 0%; 
+      transition: width 0.3s ease; 
+    }
+    .prog-pct { font-size: .85rem; color: var(--text-muted); font-weight: 700; }
+
+    /* ── Results summary ── */
+    .summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .sum-card { 
+      background: #ffffff; 
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius); 
+      box-shadow: 0 1px 3px 0 rgba(0,0,0,0.05); 
+      padding: 16px 12px; 
+      text-align: center; 
+      border-top: 3px solid var(--primary);
+      transition: var(--transition);
+    }
+    .sum-card.warn { border-top-color: #d97706; }
+    .sum-card.ok   { border-top-color: var(--success); }
+    .sum-card.err  { border-top-color: var(--error); }
+    .sum-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .sum-num   { font-size: 2rem; font-weight: 800; line-height: 1.1; margin-bottom: 4px; color: var(--text-main); }
+    .sum-label { font-size: .72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+
+    /* ── Section header ── */
+    .sec-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .sec-title { font-size: 0.95rem; font-weight: 700; color: var(--text-main); }
+    .badge { padding: 3px 10px; border-radius: 999px; font-size: .72rem; font-weight: 700; }
+    .badge-warn { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
+    .badge-ok   { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+    .badge-err  { background: var(--error-bg);   color: var(--error); border: 1px solid var(--error-border); }
+    .sec-spacer { flex: 1; }
+
+    /* ── Delete all button ── */
+    .btn-del-all {
+      padding: 6px 16px; border-radius: 6px;
+      font-size: .82rem; font-weight: 700; cursor: pointer;
+      background: var(--error-bg); color: var(--error);
+      border: 1px solid var(--error-border); transition: var(--transition); white-space: nowrap;
+    }
+    .btn-del-all:hover:not(:disabled) { background: var(--error); color: #ffffff; border-color: transparent; }
+    .btn-del-all:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Group cards ── */
+    .group-card {
+      border: 1px solid var(--card-border); 
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px; overflow: hidden;
+      background: #ffffff;
+      transition: var(--transition);
+    }
+    .group-card:hover {
+      border-color: #cbd5e1;
+    }
+    .group-card.deleted { opacity: 0.45; }
+
+    .group-head {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; background: #f8fafc;
+      user-select: none;
+      border-bottom: 1px solid transparent;
+    }
+    .group-card.open .group-head {
+      border-bottom-color: var(--card-border);
+    }
+
+    /* Mini thumbs in header (always visible) */
+    .mini-thumbs { display: flex; gap: 6px; flex-shrink: 0; }
+    .mini-thumb {
+      width: 44px; height: 44px; border-radius: 6px;
+      overflow: hidden; position: relative; flex-shrink: 0;
+      cursor: zoom-in; border: 1px solid var(--card-border);
+      transition: var(--transition);
+    }
+    .mini-thumb:hover { border-color: var(--primary); transform: scale(1.03); }
+    .mini-thumb.best  { border-color: var(--success); border-width: 2px; }
+    .mini-thumb img   { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mini-thumb img[data-broken] { opacity: .25; }
+    .mini-star {
+      position: absolute; top: 1px; right: 1px;
+      font-size: 8px; line-height: 1; color: var(--success);
+    }
+    .mini-more-overlay {
+      position: absolute; inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; color: #ffffff; font-weight: 700;
+      border-radius: 4px;
+    }
+
+    /* Text info + chevron */
+    .group-info { flex: 1; min-width: 0; cursor: pointer; padding: 2px 0; }
+    .group-count { font-size: .85rem; font-weight: 700; color: var(--text-main); }
+    .group-preview { font-size: .78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+
+    .group-chevron { color: #94a3b8; font-size: 10px; transition: transform .2s; cursor: pointer; flex-shrink: 0; padding: 4px; }
+    .group-card.open .group-chevron { transform: rotate(90deg); color: var(--text-main); }
+
+    /* Per-group delete button */
+    .btn-del-group {
+      padding: 5px 12px; border-radius: 5px; font-size: .78rem; font-weight: 700;
+      cursor: pointer; background: var(--error-bg); color: var(--error);
+      border: 1px solid var(--error-border); transition: var(--transition); white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-del-group:hover:not(:disabled) { background: var(--error); color: #ffffff; border-color: transparent; }
+    .btn-del-group:disabled { opacity: .5; cursor: not-allowed; }
+    .group-deleted-label { font-size: .78rem; color: var(--success); font-weight: 700; flex-shrink: 0; display: flex; align-items: center; gap: 4px; }
+
+    /* Group body (expanded) */
+    .group-body { display: none; padding: 14px; background: #ffffff; }
+    .group-card.open .group-body { display: block; }
+
+    /* Large thumbs in body */
+    .group-thumbs { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .group-thumb {
+      position: relative; width: 110px; flex-shrink: 0;
+      cursor: zoom-in; border-radius: var(--radius-sm);
+      overflow: hidden; border: 1px solid var(--card-border);
+      transition: var(--transition);
+      background: var(--bg);
+    }
+    .group-thumb:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .group-thumb.best { border-color: var(--success); border-width: 2px; }
+    .group-thumb img {
+      width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+    }
+    .group-thumb img[data-broken] { opacity: .25; background: var(--bg); }
+    .keep-badge {
+      background: var(--success-bg); color: var(--success); border-bottom: 1px solid var(--success-border);
+      font-size: .62rem; font-weight: 800; text-align: center;
+      padding: 2px 4px; letter-spacing: 0.02em;
+    }
+    .del-badge {
+      background: var(--error-bg); color: var(--error); border-bottom: 1px solid var(--error-border);
+      font-size: .62rem; font-weight: 800; text-align: center;
+      padding: 2px 4px; display: none; letter-spacing: 0.02em;
+    }
+    .group-card.deleted .del-badge { display: block; }
+    .group-card.deleted .keep-badge { display: none; }
+    .thumb-fname {
+      font-size: .68rem; padding: 4px 6px; background: #f8fafc;
+      color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      border-top: 1px solid var(--card-border);
+      font-weight: 500;
+    }
+    .text-box {
+      background: #f8fafc; border: 1px solid var(--card-border); border-radius: 6px;
+      padding: 10px 12px; font-size: .8rem; color: var(--text-main);
+      white-space: pre-wrap; word-break: break-word;
+      max-height: 120px; overflow-y: auto;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    /* ── Unique list ── */
+    .unique-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .unique-item {
+      border: 1px solid var(--card-border); border-radius: var(--radius-sm);
+      background: #ffffff; font-size: .82rem; overflow: hidden;
+      transition: var(--transition);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .unique-item.has-thumb { cursor: zoom-in; }
+    .unique-item.has-thumb:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .unique-file { font-weight: 700; margin-bottom: 2px; padding: 8px 10px 0; color: var(--text-main); }
+    .unique-prev { color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding: 0 10px 10px; font-size: .75rem; }
+    .unique-thumb { width: 100%; aspect-ratio: 1; overflow: hidden; background: var(--bg); border-bottom: 1px solid var(--card-border); }
+    .unique-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .unique-thumb img[data-broken] { opacity: .25; }
+
+    /* ── Errors ── */
+    .err-item { background: var(--error-bg); border: 1px solid var(--error-border); border-radius: 6px; padding: 8px 12px; font-size: .82rem; color: var(--error); margin-bottom: 8px; }
+
+    /* ── Bottom bar ── */
+    .bottom-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-top: 8px; }
+    .btn { padding: 8px 18px; border-radius: var(--radius-sm); font-size: .88rem; font-weight: 600; cursor: pointer; border: 1px solid var(--card-border); transition: var(--transition); }
+    .btn-primary { 
+      background: var(--primary); 
+      color: #ffffff; 
+      border: none;
+      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.1);
+    }
+    .btn-primary:hover { 
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+    .btn-outline { 
+      background: #ffffff; 
+      color: var(--text-main); 
+    }
+    .btn-outline:hover { 
+      background: var(--bg);
+      border-color: #cbd5e1;
+    }
+    .btn-ghost { background: transparent; color: var(--text-muted); border-color: transparent; }
+    .btn-ghost:hover { background: #f1f5f9; color: var(--text-main); }
+
+    /* ── Lightbox ── */
+    .lightbox {
+      display: none; position: fixed; inset: 0; z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .lightbox.open { display: flex; }
+    .lb-overlay {
+      position: absolute; inset: 0; background: rgba(15, 23, 42, 0.85); cursor: zoom-out;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    .lb-content {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      max-width: 90vw; max-height: 90vh;
+    }
+    .lb-content img {
+      max-width: 100%; max-height: 80vh; object-fit: contain;
+      border-radius: var(--radius); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+      border: 4px solid #ffffff;
+    }
+    .lb-close {
+      position: absolute; top: -16px; right: -16px;
+      width: 32px; height: 32px; background: #ffffff; border: 1px solid var(--card-border);
+      border-radius: 50%; cursor: pointer; font-size: 11px; color: var(--text-main);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: var(--transition);
+    }
+    .lb-close:hover { background: var(--error-bg); border-color: var(--error); color: var(--error); transform: rotate(90deg); }
+    .lb-name { color: #ffffff; font-size: .85rem; text-align: center; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .lb-badge {
+      font-size: .75rem; font-weight: 700; padding: 4px 12px;
+      border-radius: 999px;
+    }
+    .lb-badge.keep { background: var(--success); color: #ffffff; }
+    .lb-badge.del  { background: var(--error); color: #ffffff; }
+
+    /* ── Misc ── */
+    @media (max-width: 540px) {
+      .container { padding: 16px 12px 60px; }
+      .card { padding: 18px 14px; }
+      .summary-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .group-thumbs { gap: 6px; }
+      .group-thumb { width: 88px; }
+      .header { padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-icon">📋</div>
+  <div>
+    <h1>Benzer Görsel ve Metin Bulucu</h1>
+    <p>Görsel ve metinlerdeki benzerlikleri otomatik olarak tespit et ve temizle</p>
+  </div>
+</header>
+
+<!-- ════════════════════════════ LIGHTBOX ════ -->
+<div class="lightbox" id="lightbox">
+  <div class="lb-overlay" onclick="closeLightbox()"></div>
+  <div class="lb-content">
+    <img id="lbImg" src="" alt="" onerror="this.alt='Görsel yüklenemedi'">
+    <button class="lb-close" onclick="closeLightbox()">✕</button>
+    <div id="lbBadge" class="lb-badge"></div>
+    <div class="lb-name" id="lbName"></div>
+  </div>
+</div>
+
+<main class="container">
+
+  <!-- ════════════════════════════ PHASE 1: UPLOAD ════ -->
+  <div id="phase-upload" class="phase active">
+
+    <div class="card">
+      <div class="card-title">Kaynak</div>
+
+      <!-- Tabs -->
+      <div class="upload-tabs">
+        <button class="tab-btn active" data-tab="folder" onclick="switchTab('folder')">📁 Klasörden Aç</button>
+        <button class="tab-btn"        data-tab="files"  onclick="switchTab('files')">🖼 Dosya Seç</button>
+      </div>
+
+      <!-- Folder tab -->
+      <div id="tab-folder">
+        <div class="folder-input-wrap">
+          <input type="text" id="folderPath" autocomplete="off" spellcheck="false"
+                 placeholder="Örn: C:\Users\Burak\Desktop\Belgeler">
+          <button class="btn-browse" id="browseBtn" type="button">📂 Seç...</button>
+        </div>
+        <div class="folder-hint">
+          💡 Explorer'da adres çubuğuna tıklayıp <kbd>Ctrl+C</kbd> ile kopyalayabilirsiniz
+        </div>
+        <div class="folder-status" id="folderStatus"></div>
+      </div>
+
+      <!-- Files tab -->
+      <div id="tab-files" style="display:none">
+        <div class="drop-zone" id="dropZone">
+          <div class="dz-icon">🖼️</div>
+          <div class="dz-text">Fotoğrafları buraya sürükle &amp; bırak</div>
+          <div class="dz-sub"><em>veya tıklayarak seç</em> · JPG · PNG · WEBP · BMP · TIFF</div>
+        </div>
+        <input type="file" id="fileInput" multiple
+               accept=".jpg,.jpeg,.png,.webp,.bmp,.tiff" style="display:none">
+        <div id="fileMeta" class="file-meta" style="display:none">
+          <strong id="fileCountNum">0</strong> fotoğraf seçildi
+          <button class="clear-btn" id="clearBtn">Temizle</button>
+        </div>
+        <div class="thumb-grid" id="thumbGrid"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Ayarlar</div>
+      <div class="settings-grid">
+        <div>
+          <div class="setting-label">Analiz Modu</div>
+          <div class="radio-row">
+            <label class="radio-pill"><input type="radio" name="mode" value="hybrid" checked>Hibrit (Otomatik)</label>
+            <label class="radio-pill"><input type="radio" name="mode" value="visual">Sadece Görsel (Hızlı)</label>
+            <label class="radio-pill"><input type="radio" name="mode" value="text">Sadece Metin (OCR)</label>
+          </div>
+        </div>
+        <div>
+          <div class="setting-label" id="langLabel">Dil</div>
+          <div class="radio-row" id="langRow">
+            <label class="radio-pill"><input type="radio" name="lang" value="tr+en" checked>TR + EN</label>
+            <label class="radio-pill"><input type="radio" name="lang" value="tr">Türkçe</label>
+            <label class="radio-pill"><input type="radio" name="lang" value="en">English</label>
+          </div>
+        </div>
+        <div>
+          <div class="setting-label">İşlemci</div>
+          <div class="radio-row">
+            <label class="radio-pill"><input type="radio" name="gpu" value="auto" checked>Otomatik</label>
+            <label class="radio-pill"><input type="radio" name="gpu" value="gpu">GPU</label>
+            <label class="radio-pill"><input type="radio" name="gpu" value="cpu">CPU</label>
+          </div>
+          <div class="gpu-hint off" id="gpuHint">GPU durumu kontrol ediliyor…</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="analyze-btn" id="analyzeBtn" disabled>Analiz Et</button>
+
+  </div><!-- /phase-upload -->
+
+
+  <!-- ════════════════════════════ PHASE 2: PROGRESS ════ -->
+  <div id="phase-progress" class="phase">
+    <div class="card">
+      <div class="progress-wrap">
+        <div class="spinner"></div>
+        <div class="prog-title">Analiz Ediliyor…</div>
+        <div class="prog-sub" id="progSub">Hazırlanıyor…</div>
+        <div class="prog-bar-track"><div class="prog-bar" id="progBar"></div></div>
+        <div class="prog-pct" id="progPct">0%</div>
+      </div>
+    </div>
+  </div><!-- /phase-progress -->
+
+
+  <!-- ════════════════════════════ PHASE 3: RESULTS ════ -->
+  <div id="phase-results" class="phase">
+
+    <div class="summary-row" id="summaryRow"></div>
+
+    <div class="card" id="secDuplicates" style="display:none">
+      <div class="sec-header">
+        <div class="sec-title">Tekrar Eden Metinler ve Görseller</div>
+        <span class="badge badge-warn" id="badgeDup"></span>
+        <div class="sec-spacer"></div>
+        <button class="btn-del-all" id="delAllBtn" style="display:none"
+                onclick="deleteAllDups()">🗑 Tüm Tekrarları Sil</button>
+      </div>
+      <div id="dupList"></div>
+    </div>
+
+    <div class="card" id="secUnique" style="display:none">
+      <div class="sec-header">
+        <div class="sec-title">Benzersiz Metinler ve Görseller</div>
+        <span class="badge badge-ok" id="badgeUniq"></span>
+      </div>
+      <div class="unique-grid" id="uniqList"></div>
+    </div>
+
+    <div class="card" id="secErrors" style="display:none">
+      <div class="sec-header">
+        <div class="sec-title">Hatalar</div>
+        <span class="badge badge-err" id="badgeErr"></span>
+      </div>
+      <div id="errList"></div>
+    </div>
+
+    <div class="card">
+      <div class="bottom-bar">
+        <button class="btn btn-primary" id="dlJson">⬇ JSON İndir</button>
+        <button class="btn btn-outline" id="dlTxt">⬇ TXT Rapor</button>
+        <button class="btn btn-ghost"  id="newBtn">↩ Yeni Analiz</button>
+      </div>
+    </div>
+
+  </div><!-- /phase-results -->
+
+</main>
+
+<script>
+"use strict";
+
+// ── State ────────────────────────────────────────────────────
+let currentJobId   = null;
+let currentResults = null;   // full results dict from /report
+let activeTab      = "folder";
+let selectedFiles  = [];
+let folderCheckTimer = null;
+let folderValid = false;
+
+// ── GPU status ────────────────────────────────────────────────
+fetch("/gpu-status").then(r => r.json()).then(d => {
+  const el = document.getElementById("gpuHint");
+  if (d.available) { el.textContent = "GPU aktif: " + d.device; el.className = "gpu-hint ok"; }
+  else             { el.textContent = "GPU bulunamadı — CPU kullanılacak"; el.className = "gpu-hint off"; }
+}).catch(() => { document.getElementById("gpuHint").textContent = "GPU durumu alınamadı"; });
+
+// ── Settings Visibility Helper ────────────────────────────────
+function updateSettingsVisibility() {
+  const selectedMode = document.querySelector('input[name="mode"]:checked').value;
+  const langLabel = document.getElementById('langLabel');
+  const langRow = document.getElementById('langRow');
+  
+  if (selectedMode === 'visual') {
+    langLabel.style.opacity = '0.4';
+    langRow.style.opacity = '0.4';
+    langRow.style.pointerEvents = 'none';
+  } else {
+    langLabel.style.opacity = '1';
+    langRow.style.opacity = '1';
+    langRow.style.pointerEvents = 'auto';
+  }
+}
+document.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener('change', updateSettingsVisibility));
+updateSettingsVisibility();
+
+// ── Phase helpers ─────────────────────────────────────────────
+function showPhase(id) {
+  document.querySelectorAll(".phase").forEach(p => p.classList.remove("active"));
+  document.getElementById("phase-" + id).classList.add("active");
+  window.scrollTo(0, 0);
+}
+
+// ── Tab switching ─────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  document.getElementById("tab-folder").style.display = tab === "folder" ? "" : "none";
+  document.getElementById("tab-files").style.display  = tab === "files"  ? "" : "none";
+  updateAnalyzeBtn();
+}
+
+// ── Folder path ───────────────────────────────────────────────
+const folderPathInput = document.getElementById("folderPath");
+const folderStatusEl  = document.getElementById("folderStatus");
+
+document.getElementById("browseBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("browseBtn");
+  const oldText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = "⏳ Seçiliyor...";
+  try {
+    const r = await fetch("/select-folder", { method: "POST" });
+    const d = await r.json();
+    if (d.folder_path) {
+      folderPathInput.value = d.folder_path;
+      checkFolderPath(d.folder_path);
+    }
+  } catch (err) {
+    alert("Klasör seçim hatası: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = oldText;
+  }
+});
+
+folderPathInput.addEventListener("input", () => {
+  clearTimeout(folderCheckTimer);
+  folderValid = false;
+  folderStatusEl.textContent = "";
+  folderStatusEl.className = "folder-status";
+  updateAnalyzeBtn();
+  const path = folderPathInput.value.trim();
+  if (path.length < 3) return;
+  folderCheckTimer = setTimeout(() => checkFolderPath(path), 450);
+});
+
+async function checkFolderPath(path) {
+  try {
+    const r = await fetch("/check-folder?path=" + encodeURIComponent(path));
+    const d = await r.json();
+    if (d.valid) {
+      folderValid = true;
+      folderStatusEl.className = "folder-status ok";
+      folderStatusEl.innerHTML = "✓ " + d.count + " fotoğraf bulundu";
+    } else {
+      folderValid = false;
+      folderStatusEl.className = "folder-status err";
+      folderStatusEl.textContent = "✗ " + d.error;
+    }
+  } catch {
+    folderValid = false;
+  }
+  updateAnalyzeBtn();
+}
+
+// ── File upload (tab 2) ────────────────────────────────────────
+const dropZone    = document.getElementById("dropZone");
+const fileInput   = document.getElementById("fileInput");
+const thumbGrid   = document.getElementById("thumbGrid");
+const fileMeta    = document.getElementById("fileMeta");
+const fileCountEl = document.getElementById("fileCountNum");
+
+dropZone.addEventListener("click", () => fileInput.click());
+dropZone.addEventListener("dragover",  e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+dropZone.addEventListener("drop", e => {
+  e.preventDefault(); dropZone.classList.remove("dragover");
+  addFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener("change", () => { addFiles(Array.from(fileInput.files)); fileInput.value = ""; });
+document.getElementById("clearBtn").addEventListener("click", () => {
+  selectedFiles = []; thumbGrid.innerHTML = ""; syncFileCount();
+});
+
+const SUPPORTED = new Set([".jpg",".jpeg",".png",".webp",".bmp",".tiff"]);
+
+function addFiles(files) {
+  for (const f of files) {
+    const ext = "." + f.name.split(".").pop().toLowerCase();
+    if (!SUPPORTED.has(ext)) continue;
+    if (selectedFiles.some(s => s.name === f.name && s.size === f.size)) continue;
+    selectedFiles.push(f);
+    addThumb(f);
+  }
+  syncFileCount();
+}
+function addThumb(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const card = document.createElement("div");
+    card.className = "thumb-card";
+    card.innerHTML = `<img src="${e.target.result}" alt="${esc(file.name)}"><span class="thumb-name">${esc(file.name)}</span><button class="thumb-remove" title="Kaldır">✕</button>`;
+    card.querySelector(".thumb-remove").addEventListener("click", ev => {
+      ev.stopPropagation();
+      selectedFiles = selectedFiles.filter(s => !(s.name === file.name && s.size === file.size));
+      card.remove(); syncFileCount();
+    });
+    thumbGrid.appendChild(card);
+  };
+  reader.readAsDataURL(file);
+}
+function syncFileCount() {
+  const n = selectedFiles.length;
+  fileCountEl.textContent = n;
+  fileMeta.style.display = n > 0 ? "flex" : "none";
+  updateAnalyzeBtn();
+}
+function updateAnalyzeBtn() {
+  const btn = document.getElementById("analyzeBtn");
+  if (activeTab === "folder") btn.disabled = !folderValid;
+  else                        btn.disabled = selectedFiles.length === 0;
+}
+
+// ── Analyze ───────────────────────────────────────────────────
+document.getElementById("analyzeBtn").addEventListener("click", () => {
+  if (activeTab === "folder") startFolderAnalysis();
+  else                        startFileAnalysis();
+});
+
+async function startFolderAnalysis() {
+  const path = folderPathInput.value.trim();
+  if (!path) return;
+  const fd = new FormData();
+  fd.append("folder_path", path);
+  fd.append("languages",   document.querySelector('input[name="lang"]:checked').value);
+  fd.append("use_gpu",     document.querySelector('input[name="gpu"]:checked').value);
+  fd.append("mode",        document.querySelector('input[name="mode"]:checked').value);
+  await submitAnalysis("/analyze-folder", fd);
+}
+
+async function startFileAnalysis() {
+  if (selectedFiles.length === 0) return;
+  const fd = new FormData();
+  for (const f of selectedFiles) fd.append("files", f);
+  fd.append("languages", document.querySelector('input[name="lang"]:checked').value);
+  fd.append("use_gpu",   document.querySelector('input[name="gpu"]:checked').value);
+  fd.append("mode",        document.querySelector('input[name="mode"]:checked').value);
+  await submitAnalysis("/analyze", fd);
+}
+
+async function submitAnalysis(url, fd) {
+  showPhase("progress");
+  setProgress(0, "Sunucuya gönderiliyor…");
+  let resp;
+  try { resp = await fetch(url, { method: "POST", body: fd }); }
+  catch (err) { alert("Sunucuya bağlanılamadı: " + err.message); showPhase("upload"); return; }
+  if (!resp.ok) {
+    const e = await resp.json().catch(() => ({}));
+    alert("Hata: " + (e.detail || resp.statusText)); showPhase("upload"); return;
+  }
+  const { job_id, total } = await resp.json();
+  currentJobId = job_id;
+  setProgress(0, `0 / ${total} fotoğraf işlendi`);
+  listenProgress(job_id, total);
+}
+
+// ── Progress SSE ──────────────────────────────────────────────
+function setProgress(pct, sub) {
+  document.getElementById("progBar").style.width = pct + "%";
+  document.getElementById("progPct").textContent = pct + "%";
+  document.getElementById("progSub").textContent = sub;
+}
+
+function listenProgress(jobId, total) {
+  const es = new EventSource("/progress/" + jobId);
+  es.onmessage = ev => {
+    const d = JSON.parse(ev.data);
+    if (d.error) { es.close(); alert("Hata: " + d.error); showPhase("upload"); return; }
+    const pct = d.percent || 0;
+    let sub = `${d.processed} / ${d.total} fotoğraf işlendi`;
+    if (d.current_file && d.status === "processing")
+      sub = `İşleniyor (${d.processed}/${d.total}): ${d.current_file}`;
+    setProgress(pct, sub);
+    if (d.status === "completed") {
+      es.close(); setProgress(100, "Tamamlandı! Sonuçlar yükleniyor…");
+      loadResults(jobId, d.errors || []);
+    } else if (d.status === "failed") {
+      es.close(); alert("Analiz başarısız:\n" + (d.errors || []).join("\n")); showPhase("upload");
+    }
+  };
+  es.onerror = () => { es.close(); alert("Bağlantı kesildi. Sayfayı yenileyin."); showPhase("upload"); };
+}
+
+async function loadResults(jobId, errors) {
+  try {
+    const r    = await fetch(`/report/${jobId}?format=json`);
+    const text = await r.text();
+    currentResults = JSON.parse(text);
+  } catch (err) { alert("Sonuçlar alınamadı: " + err.message); showPhase("upload"); return; }
+  renderResults(currentResults, errors);
+  showPhase("results");
+}
+
+// ── Results rendering ─────────────────────────────────────────
+function renderResults(data, errors) {
+  const hasPaths = data.has_paths;
+  const folderMode = data.folder_mode;
+
+  // Summary
+  document.getElementById("summaryRow").innerHTML = `
+    <div class="sum-card"><div class="sum-num">${data.total}</div><div class="sum-label">Toplam</div></div>
+    <div class="sum-card warn"><div class="sum-num">${data.duplicate_group_count}</div><div class="sum-label">Tekrar Grubu</div></div>
+    <div class="sum-card ok"><div class="sum-num">${data.unique_count}</div><div class="sum-label">Benzersiz</div></div>
+    <div class="sum-card err"><div class="sum-num">${errors.length}</div><div class="sum-label">Hata</div></div>
+  `;
+
+  // Duplicate groups
+  const dups = data.duplicate_groups || [];
+  const secDup = document.getElementById("secDuplicates");
+  if (dups.length > 0) {
+    secDup.style.display = "";
+    document.getElementById("badgeDup").textContent = dups.length + " grup";
+    
+    const btn = document.getElementById("delAllBtn");
+    if (folderMode) {
+      btn.style.display = "";
+      btn.disabled = false;
+      btn.textContent = "🗑 Tüm Tekrarları Sil";
+    } else {
+      btn.style.display = "none";
+    }
+
+    document.getElementById("dupList").innerHTML = dups.map((g, i) => {
+      const miniHtml = buildMiniThumbs(g, i, hasPaths);
+      const delBtn = folderMode
+        ? `<button class="btn-del-group" id="delGrp${i}" onclick="deleteGroup(${i})">🗑 Sil</button>`
+        : "";
+      return `
+        <div class="group-card" id="gc${i}">
+          <div class="group-head">
+            ${miniHtml}
+            <div class="group-info" onclick="toggleGroup('gc${i}')">
+              <div class="group-count">${g.files.length} fotoğraf</div>
+              <div class="group-preview">${g.text_preview ? `Okunan Metin: "${esc(g.text_preview)}"` : 'Okunan metin yok (Görsel olarak eşleşti)'}</div>
+            </div>
+            <span class="group-chevron" onclick="toggleGroup('gc${i}')">▶</span>
+            ${delBtn}
+            <span class="group-deleted-label" id="delLabel${i}" style="display:none">✓ Silindi</span>
+          </div>
+          <div class="group-body">
+            ${buildBodyThumbs(g, i, hasPaths)}
+            ${g.text_preview ? `<div class="text-box-label" style="font-size:0.75rem;font-weight:700;color:var(--text-muted);margin:8px 0 4px 2px">Tespit Edilen Metin:</div><div class="text-box">${esc(g.text_preview)}</div>` : ""}
+          </div>
+        </div>`;
+    }).join("");
+  } else { secDup.style.display = "none"; }
+
+  // Unique
+  const unique = data.unique_items || [];
+  const secUniq = document.getElementById("secUnique");
+  if (unique.length > 0) {
+    secUniq.style.display = "";
+    document.getElementById("badgeUniq").textContent = unique.length + " adet";
+    document.getElementById("uniqList").innerHTML = unique.map(q => {
+      const thumbHtml = hasPaths
+        ? `<div class="unique-thumb" onclick="openLightbox('${esc(q.file)}',false,true);event.stopPropagation()">
+             <img src="/image/${currentJobId}/${encodeURIComponent(q.file)}?thumb=true"
+                  loading="lazy" onerror="this.dataset.broken=1;this.src=''">
+           </div>`
+        : "";
+      return `<div class="unique-item ${hasPaths ? "has-thumb" : ""}">
+        ${thumbHtml}
+        <div class="unique-file">📄 ${esc(q.file)}</div>
+        <div class="unique-prev">${q.text_preview ? `Okunan Metin: "${esc(q.text_preview)}"` : "Okunan metin yok"}</div>
+      </div>`;
+    }).join("");
+  } else { secUniq.style.display = "none"; }
+
+  // Errors
+  const secErr = document.getElementById("secErrors");
+  if (errors.length > 0) {
+    secErr.style.display = "";
+    document.getElementById("badgeErr").textContent = errors.length;
+    document.getElementById("errList").innerHTML = errors.map(e => `<div class="err-item">⚠ ${esc(e)}</div>`).join("");
+  } else { secErr.style.display = "none"; }
+}
+
+function buildMiniThumbs(group, groupIdx, hasPaths) {
+  if (!hasPaths) return "";
+  const total = group.files.length;
+  const MAX = 5;
+  let html = '<div class="mini-thumbs">';
+  const count = Math.min(total, MAX);
+  for (let fi = 0; fi < count; fi++) {
+    const fname = group.files[fi];
+    const isBest = fi === group.best_index;
+    const src = `/image/${currentJobId}/${encodeURIComponent(fname)}?thumb=true`;
+    const hidden = total - MAX;
+    const showOverlay = fi === MAX - 1 && hidden > 0;
+    html += `<div class="mini-thumb ${isBest ? "best" : ""}"
+               onclick="${showOverlay
+                 ? `toggleGroup('gc${groupIdx}');event.stopPropagation()`
+                 : `openLightbox('${esc(fname)}',${isBest});event.stopPropagation()`}">
+               <img src="${src}" loading="lazy" onerror="this.dataset.broken=1;this.src=''">
+               ${isBest && !showOverlay ? '<span class="mini-star">★</span>' : ""}
+               ${showOverlay ? `<div class="mini-more-overlay">+${hidden}</div>` : ""}
+             </div>`;
+  }
+  html += "</div>";
+  return html;
+}
+
+function buildBodyThumbs(group, groupIdx, hasPaths) {
+  if (!hasPaths) {
+    return '<div style="font-size:.8rem;color:var(--gray-400);margin-bottom:8px">'
+      + group.files.map(f => `📄 ${esc(f)}`).join(" &nbsp;·&nbsp; ") + "</div>";
+  }
+  let html = '<div class="group-thumbs">';
+  group.files.forEach((fname, fi) => {
+    const isBest = fi === group.best_index;
+    const src = `/image/${currentJobId}/${encodeURIComponent(fname)}?thumb=true`;
+    html += `<div class="group-thumb ${isBest ? "best" : ""}"
+                  onclick="openLightbox('${esc(fname)}',${isBest})">
+               <img src="${src}" loading="lazy" onerror="this.dataset.broken=1;this.src=''">
+               ${isBest
+                 ? '<div class="keep-badge">★ Korunacak</div>'
+                 : '<div class="del-badge" style="display:block">Silinecek</div>'}
+               <div class="thumb-fname">${esc(fname)}</div>
+             </div>`;
+  });
+  html += "</div>";
+  return html;
+}
+
+function toggleGroup(id) { document.getElementById(id).classList.toggle("open"); }
+
+// ── Lightbox ──────────────────────────────────────────────────
+function openLightbox(filename, isBest, isUnique) {
+  document.getElementById("lbImg").src = `/image/${currentJobId}/${encodeURIComponent(filename)}`;
+  document.getElementById("lbName").textContent = filename;
+  const badge = document.getElementById("lbBadge");
+  if (isUnique) {
+    badge.style.display = "none";
+  } else {
+    badge.style.display = "";
+    badge.textContent = isBest ? "★ Korunacak" : "Silinecek";
+    badge.className = "lb-badge " + (isBest ? "keep" : "del");
+  }
+  document.getElementById("lightbox").classList.add("open");
+}
+function closeLightbox() {
+  document.getElementById("lightbox").classList.remove("open");
+  document.getElementById("lbImg").src = "";
+  document.getElementById("lbBadge").style.display = "";
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeLightbox(); });
+
+// ── Delete group ──────────────────────────────────────────────
+async function deleteGroup(idx) {
+  const group = currentResults.duplicate_groups[idx];
+  const toDelete = group.files.filter((_, i) => i !== group.best_index);
+  const keep = group.files[group.best_index];
+
+  if (!confirm(
+    `"${keep}" korunacak.\n\nSilinecek (${toDelete.length} dosya):\n${toDelete.join("\n")}\n\nDevam edilsin mi?`
+  )) return;
+
+  const btn = document.getElementById("delGrp" + idx);
+  btn.disabled = true; btn.textContent = "Siliniyor…";
+
+  try {
+    const r = await fetch(`/group/${currentJobId}/${idx}`, { method: "DELETE" });
+    const d = await r.json();
+    if (d.failed && d.failed.length > 0) alert("Bazı dosyalar silinemedi:\n" + d.failed.join("\n"));
+    markGroupDeleted(idx);
+  } catch (err) {
+    alert("Silme hatası: " + err.message);
+    btn.disabled = false; btn.textContent = "🗑 Sil";
+  }
+}
+
+function markGroupDeleted(idx) {
+  const card = document.getElementById("gc" + idx);
+  if (card) card.classList.add("deleted");
+  const btn = document.getElementById("delGrp" + idx);
+  if (btn) btn.style.display = "none";
+  const lbl = document.getElementById("delLabel" + idx);
+  if (lbl) lbl.style.display = "";
+  if (currentResults) currentResults.duplicate_groups[idx].deleted = true;
+  updateDelAllBtn();
+}
+
+function updateDelAllBtn() {
+  const groups = currentResults?.duplicate_groups || [];
+  const pending = groups.filter(g => !g.deleted);
+  const btn = document.getElementById("delAllBtn");
+  if (pending.length === 0) { btn.disabled = true; btn.textContent = "✓ Tümü silindi"; }
+}
+
+// ── Delete all ────────────────────────────────────────────────
+async function deleteAllDups() {
+  const groups = currentResults?.duplicate_groups || [];
+  const pending = groups.filter(g => !g.deleted);
+  if (pending.length === 0) { alert("Silinecek grup yok."); return; }
+
+  const totalToDelete = pending.reduce((acc, g) => acc + g.files.length - 1, 0);
+  if (!confirm(
+    `${pending.length} gruptaki ${totalToDelete} tekrar eden fotoğraf silinecek.\nHer gruptan en yüksek çözünürlüklü fotoğraf korunacak.\n\nBu işlem GERİ ALINAMAZ!`
+  )) return;
+
+  const btn = document.getElementById("delAllBtn");
+  btn.disabled = true; btn.textContent = "Siliniyor…";
+
+  try {
+    const r = await fetch(`/all-duplicates/${currentJobId}`, { method: "DELETE" });
+    const d = await r.json();
+    groups.forEach((_, i) => { if (!currentResults.duplicate_groups[i].deleted) markGroupDeleted(i); });
+    btn.textContent = `✓ ${d.deleted} fotoğraf silindi`;
+    if (d.failed && d.failed.length > 0) alert("Bazı dosyalar silinemedi:\n" + d.failed.join("\n"));
+  } catch (err) {
+    alert("Silme hatası: " + err.message);
+    btn.disabled = false; btn.textContent = "🗑 Tüm Tekrarları Sil";
+  }
+}
+
+// ── Downloads ─────────────────────────────────────────────────
+document.getElementById("dlJson").addEventListener("click", () => { if (currentJobId) window.location = `/report/${currentJobId}?format=json`; });
+document.getElementById("dlTxt").addEventListener("click",  () => { if (currentJobId) window.location = `/report/${currentJobId}?format=txt`; });
+
+// ── New analysis ──────────────────────────────────────────────
+document.getElementById("newBtn").addEventListener("click", () => {
+  selectedFiles = []; thumbGrid.innerHTML = ""; syncFileCount();
+  folderPathInput.value = ""; folderValid = false;
+  folderStatusEl.textContent = ""; folderStatusEl.className = "folder-status";
+  currentJobId = null; currentResults = null;
+  document.getElementById("analyzeBtn").disabled = true;
+  showPhase("upload");
+});
+
+// ── HTML escape ───────────────────────────────────────────────
+function esc(s) {
+  if (!s) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+</script>
+</body>
+</html>
